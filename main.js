@@ -58,7 +58,7 @@ client.once('ready', async () => {
     setInterval(async () => {
         let a = await scraper()
         client.user.setPresence({ activities: [{ name: `${a[3]}` }], status: 'idle' });
-        if (a[4] !== lastCheckDate && len(lastCheckDate) !== 0) {
+        if (a[4] !== lastCheckDate && lastCheckDate.length !== 0) {
             for (channelId in autoPostConfig) {
                 client.channels.cache.get(clientId).send(`${a[0]} \n${a[1]} \n ${a[2]}\n`)
             }

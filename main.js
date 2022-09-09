@@ -31,6 +31,31 @@ const setAutoMessage = (client, clientId, delay, frequency, setTime) => {
     }, delay);
 }
 
+const setAutoMessageForScratchZac = (client) => {
+    let clientId = "859507243619450920";
+    let frequency = 86400 * 1000
+    let delay = 20 * 1000
+    let setTime = 1662692134946;
+    let currentTime = Date.now()
+    if (setTime + delay < currentTime) {
+        delay = frequency - (currentTime - (setTime + delay)) % frequency
+    } else {
+        delay = setTime + delay - currentTime
+    }
+    console.log(delay)
+
+    setTimeout(() => {
+        client.channels.cache.get(clientId).send(`今天给Glo挠背了吗 @zac`)
+        setInterval(() => {
+            client.channels.cache.get(clientId).send(`今天给Glo挠背了吗 @zac`)
+        }, frequency);
+
+    }, delay);
+}
+
+
+
+
 
 const saveAutopost = (clientId, delay, frequency, setTime) => {
     autoPostConfig[clientId] = {
@@ -55,6 +80,7 @@ client.once('ready', async () => {
     let a = await scraper()
     client.user.setPresence({ activities: [{ name: `${a[3]}` }], status: 'idle' });
     lastCheckDate = ""
+    
     setInterval(async () => {
         let a = await scraper()
         client.user.setPresence({ activities: [{ name: `${a[3]}` }], status: 'idle' });
@@ -65,6 +91,8 @@ client.once('ready', async () => {
         }
         lastCheckDate = a[4]
     }, 900 * 1000);
+    setAutoMessageForScratchZac(client);
+
     // for (channelId in autoPostConfig) {
     //     setAutoMessage(
     //         client,
@@ -76,13 +104,13 @@ client.once('ready', async () => {
 });
 
 client.on('interactionCreate', async interaction => {
-    // console.log(interaction)
+    console.log(interaction.channelId)
     if (!interaction.isChatInputCommand()) return;
 
     const { commandName } = interaction;
 
     if (commandName === 'ping') {
-        await interaction.reply(' ');
+        await interaction.reply({ content: 'Success!', ephemeral: true });
     } else if (commandName === 'server') {
         console.log(interaction)
         await interaction.reply(`Server name: ${interaction.guild.name} ${interaction.channelId}\nTotal members: ${interaction.guild.memberCount}`);

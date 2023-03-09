@@ -35,7 +35,7 @@ const setAutoMessageForScratchZac = (client) => {
     let clientId = "859507243619450920";
     let frequency = 86400 * 1000
     let delay = 22 * 1000
-    let setTime = 1662692134946;
+    let setTime = 1662692134946 + (2 * 60 * 60 * 1000);
     let currentTime = Date.now()
     if (setTime + delay < currentTime) {
         delay = frequency - (currentTime - (setTime + delay)) % frequency

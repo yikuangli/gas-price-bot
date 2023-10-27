@@ -20,13 +20,13 @@ const scraper = async () => {
                 if (priceRow.length > 0) priceTable.push(priceRow)
             })
             const predict = dom.window.document.querySelector('div')
-            const priceStatus = predict.querySelectorAll("div")
-            let price = priceStatus[3].textContent
+            const priceStatus = predict.querySelectorAll("[class=data-box-change] div")
+            let price = priceStatus[2].textContent
             let symbol = ""
-            if (priceStatus[1].style.getPropertyValue('display') === 'block') {
+            if (priceStatus[0].style.getPropertyValue('display') === 'block') {
                 symbol = ":small_red_triangle:"
             }
-            if (priceStatus[2].style.getPropertyValue('display') === 'block') {
+            if (priceStatus[1].style.getPropertyValue('display') === 'block') {
                 symbol = ":small_red_triangle_down:"
             }
             let predictString = predict.textContent
@@ -40,7 +40,8 @@ const scraper = async () => {
                 if (v[2].length > length3) length3 = v[2].length
             })
             let tableDisplay = "```"
-            priceTable.filter((v, i) => i < 5).forEach(row => {
+            priceTable.filter((v, i) => i < 5).forEach(rawrow => {
+                let row = rawrow.map(text=> text.replace(/<\/?[^>]+(>|$)/g, ""));
                 let r1 = length1 - row[0].length
                 let r2 = length2 - row[1].length
                 let r3 = length3 - row[2].length
@@ -64,7 +65,7 @@ module.exports = { scraper }
 if (require.main === module) {
 
     scraper().then(v => {
-        console.log(v[4])
+        console.log(v)
     })
 
 }

@@ -20,13 +20,13 @@ const scraper = async () => {
                 if (priceRow.length > 0) priceTable.push(priceRow)
             })
             const predict = dom.window.document.querySelector('div')
-            const priceStatus = predict.querySelectorAll("[class=data-box-change] div")
+            const priceStatus = predict.querySelectorAll("[class=data-box-change] div")//Get the tomorrow gas status block.
             let price = priceStatus[2].textContent
             let symbol = ""
-            if (priceStatus[0].style.getPropertyValue('display') === 'block') {
-                symbol = ":small_red_triangle:"
+            if (priceStatus[0].style.getPropertyValue('display') === 'block') {//first div shows means up
+                symbol = ":small_red_triangle:" 
             }
-            if (priceStatus[1].style.getPropertyValue('display') === 'block') {
+            if (priceStatus[1].style.getPropertyValue('display') === 'block') {//second div shows means down
                 symbol = ":small_red_triangle_down:"
             }
             let predictString = predict.textContent
@@ -34,7 +34,8 @@ const scraper = async () => {
             let expectIndex = parseList.indexOf("prices")
             predictString = parseList.splice(expectIndex).join(" ")
             let length1 = 0, length2 = 0, length3 = 0
-            priceTable.forEach(v => {
+            priceTable.forEach(rawV => {
+                let v = rawV.map(text=> text.replace(/<\/?[^>]+(>|$)/g, ""));
                 if (v[0].length > length1) length1 = v[0].length
                 if (v[1].length > length2) length2 = v[1].length
                 if (v[2].length > length3) length3 = v[2].length

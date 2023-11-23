@@ -4,13 +4,13 @@ FROM node:lts
 RUN mkdir -p /src
 WORKDIR /src
 
-COPY package.json /src
+COPY . /src
 RUN npm install
 RUN npm install discord.js@latest
 RUN npx playwright install
 RUN npx playwright install-deps  
 
-COPY . /src
+
 
 # Start the bot.
 CMD ["node", "main.js"]

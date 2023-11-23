@@ -1,10 +1,17 @@
 
-const { Client, GatewayIntentBits, InteractionResponse } = require('discord.js');
+const { Client, GatewayIntentBits, InteractionResponse, ThreadAutoArchiveDuration } = require('discord.js');
 const { token } = require('./config.json');
 const { scraper } = require('./scraper/scrape')
+const { rfdeals } = require('./scraper/redflag')
 const autoPostConfig = require('./autopost.json')
 const fs = require("fs");
-
+const rfconfig = {
+    "baseURL": "https://forums.redflagdeals.com",
+    "newsListURL": "/hot-deals-f9/?sk=tt&rfd_sk=tt&sd=d",
+    "articleListSelector": `li.row.topic:not(.sticky):not(.deleted) ul.dropdown 
+    li:first-child a:first-child`,
+    "source": "Redflag Deals."
+}
 // Create a new client instance
 
 const setAutoMessage = (client, clientId, delay, frequency, setTime) => {
@@ -80,7 +87,7 @@ client.once('ready', async () => {
     let a = await scraper()
     client.user.setPresence({ activities: [{ name: `${a[3]}` }], status: 'idle' });
     lastCheckDate = ""
-    
+
     setInterval(async () => {
         let a = await scraper()
         client.user.setPresence({ activities: [{ name: `${a[3]}` }], status: 'idle' });
@@ -92,6 +99,28 @@ client.once('ready', async () => {
         lastCheckDate = a[4]
     }, 900 * 1000);
     setAutoMessageForScratchZac(client);
+    // rfdeals(rfconfig, true);
+    setInterval(async () => {
+        let formId = "1177093758853054624"
+        let posts = await rfdeals(rfconfig);
+        client.channels.fetch(formId).then(channel => {
+            for (let post of posts) {
+                channel.threads.create({
+                    name: post.title,
+                    autoArchiveDuration: ThreadAutoArchiveDuration.OneHour,
+                    message: {
+                        content: post.content,
+                    },
+                    reason: '',
+                })
+                    .then(threadChannel => console.log(threadChannel))
+                    .catch(console.error);
+                    break;
+
+            }
+        })
+
+    }, 60 * 1000);
 
     // for (channelId in autoPostConfig) {
     //     setAutoMessage(

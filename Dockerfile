@@ -7,6 +7,7 @@ WORKDIR /src
 COPY package.json /src
 RUN npm install
 RUN npx playwright install
+RUN npx playwright install-deps  
 
 COPY . /src
 

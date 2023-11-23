@@ -112,10 +112,9 @@ client.once('ready', async () => {
                         content: post.content,
                     },
                     reason: '',
-                })
-                    .then(threadChannel => console.log(threadChannel))
-                    .catch(console.error);
-                    break;
+                }).then(threadChannel => console.log(threadChannel))
+                .catch(console.error);
+                break;
 
             }
         })

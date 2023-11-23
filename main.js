@@ -99,7 +99,7 @@ client.once('ready', async () => {
         lastCheckDate = a[4]
     }, 900 * 1000);
     setAutoMessageForScratchZac(client);
-    // rfdeals(rfconfig, true);
+    rfdeals(rfconfig, true);
     setInterval(async () => {
         let formId = "1177093758853054624"
         let posts = await rfdeals(rfconfig);
@@ -114,7 +114,6 @@ client.once('ready', async () => {
                     reason: '',
                 }).then(threadChannel => console.log(threadChannel))
                 .catch(console.error);
-                break;
 
             }
         })

@@ -6,6 +6,7 @@ WORKDIR /src
 
 COPY package.json /src
 RUN npm install
+RUN npm install discord.js@latest
 RUN npx playwright install
 RUN npx playwright install-deps  
 

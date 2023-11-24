@@ -53,9 +53,9 @@ const setAutoMessageForScratchZac = (client) => {
     console.log(delay)
 
     setTimeout(() => {
-        client.channels.cache.get(clientId).send(`今天给Glo挠背了吗 @zac`)
+        client.channels.fetch(clientId).then(channel => {channel.send(`今天给Glo挠背了吗 @zac`)})
         setInterval(() => {
-            client.channels.cache.get(clientId).send(`今天给Glo挠背了吗 @zac`)
+            client.channels.fetch(clientId).then(channel => {channel.send(`今天给Glo挠背了吗 @zac`)})
         }, frequency);
 
     }, delay);

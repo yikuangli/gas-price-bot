@@ -5,7 +5,6 @@ const { scraper } = require('./scraper/scrape')
 const { rfdeals } = require('./scraper/redflag')
 const autoPostConfig = require('./autopost.json')
 const fs = require("fs");
-const { channel } = require('diagnostics_channel');
 const rfconfig = {
     "baseURL": "https://forums.redflagdeals.com",
     "newsListURL": "/hot-deals-f9/?sk=tt&rfd_sk=tt&sd=d",
@@ -112,6 +111,7 @@ client.once('ready', async () => {
     setAutoMessageForScratchZac(client);
     rfdeals(rfconfig, true);
     setInterval(async () => {
+        try{
         let formId = "1177093758853054624"
         let posts = await rfdeals(rfconfig);
         client.channels.fetch(formId).then(channel => {
@@ -128,6 +128,13 @@ client.once('ready', async () => {
 
             }
         })
+    }catch(e){
+        console.log(e)
+        client.channels.fetch("1177446494509477908").then(channel => {
+            channel.send(`error on rdflag`)
+            channel.send(JSON.stringify(e))
+        })
+    }
 
     }, 60 * 1000);
 

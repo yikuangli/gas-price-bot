@@ -5,6 +5,7 @@ const { scraper } = require('./scraper/scrape')
 const { rfdeals } = require('./scraper/redflag')
 const autoPostConfig = require('./autopost.json')
 const fs = require("fs");
+const { channel } = require('diagnostics_channel');
 const rfconfig = {
     "baseURL": "https://forums.redflagdeals.com",
     "newsListURL": "/hot-deals-f9/?sk=tt&rfd_sk=tt&sd=d",
@@ -87,13 +88,23 @@ client.once('ready', async () => {
     let a = await scraper()
     client.user.setPresence({ activities: [{ name: `${a[3]}` }], status: 'idle' });
     lastCheckDate = ""
-
+    testconfig = {
+        "996191372723896473":"as",
+        "843244697577062414":'b'
+    }
+    for (channelId in testconfig) {
+        client.channels.fetch(channelId).then(channel => {
+            channel.send(`${a[0]} \n${a[1]} \n ${a[2]}\n`)
+        })
+    }
     setInterval(async () => {
         let a = await scraper()
         client.user.setPresence({ activities: [{ name: `${a[3]}` }], status: 'idle' });
         if (a[4] !== lastCheckDate && lastCheckDate.length !== 0) {
             for (channelId in autoPostConfig) {
-                client.channels.cache.get(channelId).send(`${a[0]} \n${a[1]} \n ${a[2]}\n`)
+                client.channels.fetch(channelId).then(channel => {
+                    channel.send(`${a[0]} \n${a[1]} \n ${a[2]}\n`)
+                })
             }
         }
         lastCheckDate = a[4]
@@ -113,7 +124,7 @@ client.once('ready', async () => {
                     },
                     reason: '',
                 }).then(threadChannel => console.log(threadChannel))
-                .catch(console.error);
+                    .catch(console.error);
 
             }
         })

@@ -49,12 +49,10 @@ const setAutoMessageForScratchZac = (client) => {
     } else {
         delay = setTime + delay - currentTime
     }
-    console.log(delay)
-
     setTimeout(() => {
-        client.channels.fetch(clientId).then(channel => {channel.send(`今天给Glo挠背了吗 @zac`)})
+        client.channels.fetch(clientId).then(channel => { channel.send(`今天给Glo挠背了吗 @zac`) })
         setInterval(() => {
-            client.channels.fetch(clientId).then(channel => {channel.send(`今天给Glo挠背了吗 @zac`)})
+            client.channels.fetch(clientId).then(channel => { channel.send(`今天给Glo挠背了吗 @zac`) })
         }, frequency);
 
     }, delay);
@@ -88,8 +86,8 @@ client.once('ready', async () => {
     client.user.setPresence({ activities: [{ name: `${a[3]}` }], status: 'idle' });
     lastCheckDate = ""
     testconfig = {
-        "996191372723896473":"as",
-        "843244697577062414":'b'
+        "996191372723896473": "as",
+        "843244697577062414": 'b'
     }
     for (channelId in testconfig) {
         client.channels.fetch(channelId).then(channel => {
@@ -111,32 +109,32 @@ client.once('ready', async () => {
     setAutoMessageForScratchZac(client);
     rfdeals(rfconfig, true);
     setInterval(async () => {
-        try{
-        let formId = "1177093758853054624"
-        let posts = await rfdeals(rfconfig);
-        client.channels.fetch(formId).then(channel => {
-            for (let post of posts) {
-                channel.threads.create({
-                    name: post.title,
-                    autoArchiveDuration: ThreadAutoArchiveDuration.OneHour,
-                    message: {
-                        content: post.content,
-                    },
-                    reason: '',
-                }).then(threadChannel => console.log(threadChannel))
-                    .catch(console.error);
-
+        try {
+            let formId = "1177093758853054624"
+            let posts = await rfdeals(rfconfig);
+            if (posts.length > 0) {
+                client.channels.fetch(formId).then(async channel => {
+                    for (let post of posts) {
+                        await channel.threads.create({
+                            name: post.title,
+                            autoArchiveDuration: ThreadAutoArchiveDuration.OneHour,
+                            message: {
+                                content: post.content,
+                            },
+                            reason: '',
+                        }).catch(console.error);
+                    }
+                })
             }
-        })
-    }catch(e){
-        console.log(e)
-        client.channels.fetch("1177446494509477908").then(channel => {
-            channel.send(`error on rdflag`)
-            channel.send(JSON.stringify(e))
-        })
-    }
+        } catch (e) {
+            console.log(e)
+            await client.channels.fetch("1177446494509477908").then(channel => {
+                channel.send(`error on rdflag`)
+                channel.send(JSON.stringify(e))
+            })
+        }
 
-    }, 60 * 1000);
+    }, 300 * 1000);
 
     // for (channelId in autoPostConfig) {
     //     setAutoMessage(

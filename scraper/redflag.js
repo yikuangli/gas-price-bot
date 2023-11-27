@@ -45,6 +45,8 @@ const rfdeals = async (config, init = false) => {
     const browser = await chromium.launch();
     const page = await browser.newPage();
     await page.goto(`${config.baseURL}${config.newsListURL}`);
+    let finalItemList = [];
+    try{
     const details = await extractCardDetails(page);
     let newItems = [];
     for (let item of details) {
@@ -58,7 +60,7 @@ const rfdeals = async (config, init = false) => {
         }
 
     }
-    let finalItemList = [];
+    
     if (!init) {
         newItems.forEach(item => {
             finalItemList.push({
@@ -67,6 +69,9 @@ const rfdeals = async (config, init = false) => {
             })
         })
         //  console.log(newItems);
+    }
+    }catch(e){
+        console.log("error when pareing")
     }
     // for (let url of urls) {
     //     try {
@@ -142,7 +147,9 @@ module.exports = { rfdeals }
 if (require.main === module) {
 
 
-
+    `Name: Domain Name Generator
+    Description: I generate creative domain names based on your 
+    Link: https://chat.openai.com/g/g-IFxYLMRWG-domain-name-generator`
 
 
    rfdeals(config,).then(a=>{

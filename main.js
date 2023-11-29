@@ -80,6 +80,35 @@ const saveAutopost = (clientId, delay, frequency, setTime) => {
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
+const rdDealsCheck = async () => {
+    try {
+        let formId = "1177093758853054624"
+        let posts = await rfdeals(rfconfig);
+        if (posts.length > 0) {
+            await client.channels.fetch(formId).then(async channel => {
+                for (let post of posts) {
+                    await channel.threads.create({
+                        name: post.title,
+                        autoArchiveDuration: ThreadAutoArchiveDuration.OneHour,
+                        message: {
+                            content: post.content,
+                        },
+                        reason: '',
+                    }).catch(console.error);
+                }
+            })
+        }
+    } catch (e) {
+        console.log(e)
+        await client.channels.fetch("1177446494509477908").then(channel => {
+            channel.send(`error on rdflag`)
+            // channel.send(e)
+        })
+    }
+    setTimeout(rdDealsCheck, 300 * 1000)
+
+}
+
 // When the client is ready, run this code (only once)
 client.once('ready', async () => {
     let a = await scraper()
@@ -107,34 +136,8 @@ client.once('ready', async () => {
         lastCheckDate = a[4]
     }, 900 * 1000);
     setAutoMessageForScratchZac(client);
-    rfdeals(rfconfig, true);
-    setInterval(async () => {
-        try {
-            let formId = "1177093758853054624"
-            let posts = await rfdeals(rfconfig);
-            if (posts.length > 0) {
-                client.channels.fetch(formId).then(async channel => {
-                    for (let post of posts) {
-                        await channel.threads.create({
-                            name: post.title,
-                            autoArchiveDuration: ThreadAutoArchiveDuration.OneHour,
-                            message: {
-                                content: post.content,
-                            },
-                            reason: '',
-                        }).catch(console.error);
-                    }
-                })
-            }
-        } catch (e) {
-            console.log(e)
-            await client.channels.fetch("1177446494509477908").then(channel => {
-                channel.send(`error on rdflag`)
-                channel.send(JSON.stringify(e))
-            })
-        }
-
-    }, 300 * 1000);
+    await rfdeals(rfconfig, true);
+    setTimeout(rdDealsCheck, 300 * 1000);
 
     // for (channelId in autoPostConfig) {
     //     setAutoMessage(

@@ -41,37 +41,38 @@ let time = "span.first-post-time" // innerText
 const rfdeals = async (config, init = false) => {
     // Load the configuration file
     //const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-
-    const browser = await chromium.launch();
-    const page = await browser.newPage();
-    await page.goto(`${config.baseURL}${config.newsListURL}`);
-    let finalItemList = [];
-    try{
-    const details = await extractCardDetails(page);
-    let newItems = [];
-    for (let item of details) {
-        if (isItemNew(item)) {
-            // Crawl the item
-            addToStack(item);
-            newItems.push(item)
-            // ... your crawling logic ...
-        } else {
-            break;
+    try {
+        const browser = await chromium.launch();
+        const page = await browser.newPage();
+        await page.goto(`${config.baseURL}${config.newsListURL}`);
+        let finalItemList = [];
+        const details = await extractCardDetails(page);
+        let newItems = [];
+        for (let item of details) {
+            if (isItemNew(item)) {
+                // Crawl the item
+                addToStack(item);
+                newItems.push(item)
+                // ... your crawling logic ...
+            } else {
+                break;
+            }
         }
-
-    }
-    
-    if (!init) {
-        newItems.forEach(item => {
-            finalItemList.push({
-                title: item.title,
-                content: `${item.url}`
+        if (!init) {
+            newItems.forEach(item => {
+                finalItemList.push({
+                    title: item.title,
+                    content: `${item.url}`
+                })
             })
-        })
-        //  console.log(newItems);
-    }
-    }catch(e){
+            //  console.log(newItems);
+        }
+        if (browser) await browser.close();
+        return finalItemList;
+    } catch (e) {
+        if (browser) await browser.close();
         console.log("error when pareing")
+        return []
     }
     // for (let url of urls) {
     //     try {
@@ -87,8 +88,7 @@ const rfdeals = async (config, init = false) => {
     //         console.error('Error navigating to:', url, error);
     //     }
     // }
-    await browser.close();
-    return finalItemList;
+
     // return returnList;
 }
 
@@ -152,7 +152,7 @@ if (require.main === module) {
     Link: https://chat.openai.com/g/g-IFxYLMRWG-domain-name-generator`
 
 
-   rfdeals(config,).then(a=>{
+    rfdeals(config,).then(a => {
         console.log(a)
     })
 

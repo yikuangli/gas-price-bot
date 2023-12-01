@@ -105,7 +105,7 @@ const rdDealsCheck = async () => {
             // channel.send(e)
         })
     }
-    setTimeout(rdDealsCheck, 300 * 1000)
+    setTimeout(rdDealsCheck, 900 * 1000)
 
 }
 

@@ -39,6 +39,7 @@ const setAutoMessage = (client, clientId, delay, frequency, setTime) => {
 }
 
 const setAutoMessageForScratchZac = (client) => {
+    return
     let clientId = "859507243619450920";
     let frequency = 86400 * 1000
     let delay = 22 * 1000
@@ -135,7 +136,6 @@ client.once('ready', async () => {
         }
         lastCheckDate = a[4]
     }, 900 * 1000);
-    setAutoMessageForScratchZac(client);
     await rfdeals(rfconfig, true);
     setTimeout(rdDealsCheck, 300 * 1000);
 

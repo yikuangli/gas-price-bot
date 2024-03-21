@@ -135,9 +135,9 @@ client.once('ready', async () => {
             }
         }
         lastCheckDate = a[4]
-    }, 1800 * 1000);
-    // await rfdeals(rfconfig, true);
-    // setTimeout(rdDealsCheck, 300 * 1000);
+    }, 900 * 1000);
+    await rfdeals(rfconfig, true);
+    setTimeout(rdDealsCheck, 300 * 1000);
 
     // for (channelId in autoPostConfig) {
     //     setAutoMessage(

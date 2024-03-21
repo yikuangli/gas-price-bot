@@ -1,0 +1,5 @@
+{
+    "mongo":{
+        "url": "mongodb://admin:SlurpeeOtto2021@tenfork.local:27017/?authMechanism=DEFAULT&authSource=admin"
+    }
+}

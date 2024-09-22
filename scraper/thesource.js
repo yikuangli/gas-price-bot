@@ -20,9 +20,10 @@ const thesource = async () => {
 
         return { name, price, stock };
     }
-    let cards = await page.$$(productListTag)
+   
     await page.goto(tplinkweburl);
     await page.waitForTimeout(10000);
+    let cards = await page.$$(productListTag)
     const tplinkcardDetails = await Promise.all(cards.map(card => extractDetailsFromCard(card)))
     
    

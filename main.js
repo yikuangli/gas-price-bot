@@ -131,7 +131,7 @@ const thesourceCheck = async () => {
             // channel.send(e)
         })
     }
-    setTimeout(rdDealsCheck, 300 * 1000)
+    setTimeout(thesourceCheck, 300 * 1000)
 }
 
 // When the client is ready, run this code (only once)

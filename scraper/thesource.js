@@ -37,11 +37,11 @@ const thesource = async () => {
 }
 
 
-module.exports = { scraper }
+module.exports = { thesource }
 
 if (require.main === module) {
 
-    scraper().then(v => {
+    thesource().then(v => {
        console.log(v)
     })
 

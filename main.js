@@ -3,6 +3,7 @@ const { Client, GatewayIntentBits, InteractionResponse, ThreadAutoArchiveDuratio
 const { token } = require('./config.json');
 const { scraper } = require('./scraper/scrape')
 const { rfdeals } = require('./scraper/redflag')
+const { thesource } = require('./scraper/thesource')
 const autoPostConfig = require('./autopost.json')
 const fs = require("fs");
 const rfconfig = {
@@ -110,6 +111,28 @@ const rdDealsCheck = async () => {
 
 }
 
+const thesourceCheck = async () => {
+    try {
+        let stockList = await thesource()
+        if (stockList.length > 0) {
+            await client.channels.fetch("843244697577062414").then(channel => {
+                let message = "```";
+                for (let stock of stockList) {
+                    message += `${stock.price}  |  ${stock.name}  | ${stock.stock}\n`
+                }
+                message += "```"
+                channel.send(message)
+                // channel.send(e)
+            })
+        }
+    } catch (e) {
+        await client.channels.fetch("1177446494509477908").then(channel => {
+            channel.send(`error on thesource`)
+            // channel.send(e)
+        })
+    }
+}
+
 // When the client is ready, run this code (only once)
 client.once('ready', async () => {
     let a = await scraper()
@@ -138,7 +161,7 @@ client.once('ready', async () => {
     }, 900 * 1000);
     await rfdeals(rfconfig, true);
     setTimeout(rdDealsCheck, 300 * 1000);
-
+    setTimeout(thesourceCheck, 300 * 1000);
     // for (channelId in autoPostConfig) {
     //     setAutoMessage(
     //         client,

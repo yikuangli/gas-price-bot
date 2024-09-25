@@ -125,8 +125,9 @@ const thesourceCheck = async () => {
                 message += "```"
                 if (clearPriceItemCount !== stockList.length) {
                     message += "\n <@650752284380233734>"
+                    channel.send(message)
                 }
-                channel.send(message)
+                
                 // channel.send(e)
             })
         }
@@ -137,7 +138,7 @@ const thesourceCheck = async () => {
             // channel.send(e)
         })
     }
-    setTimeout(thesourceCheck, 300 * 1000)
+    setTimeout(thesourceCheck, 310 * 1000)
 }
 
 // When the client is ready, run this code (only once)

@@ -39,29 +39,6 @@ const setAutoMessage = (client, clientId, delay, frequency, setTime) => {
     }, delay);
 }
 
-const setAutoMessageForScratchZac = (client) => {
-    return
-    let clientId = "859507243619450920";
-    let frequency = 86400 * 1000
-    let delay = 22 * 1000
-    let setTime = 1662692134946 + (1 * 60 * 60 * 1000);
-    let currentTime = Date.now()
-    if (setTime + delay < currentTime) {
-        delay = frequency - (currentTime - (setTime + delay)) % frequency
-    } else {
-        delay = setTime + delay - currentTime
-    }
-    setTimeout(() => {
-        client.channels.fetch(clientId).then(channel => { channel.send(`今天给Glo挠背了吗 @zac`) })
-        setInterval(() => {
-            client.channels.fetch(clientId).then(channel => { channel.send(`今天给Glo挠背了吗 @zac`) })
-        }, frequency);
-
-    }, delay);
-}
-
-
-
 
 
 const saveAutopost = (clientId, delay, frequency, setTime) => {

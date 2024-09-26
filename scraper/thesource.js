@@ -48,8 +48,6 @@ const thesource = async () => {
         console.log(e)
         if (browser) await browser.close();
         return {error: e.toString()}
-    }finally{
-        if (browser) await browser.close();
     }
     
 }

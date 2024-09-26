@@ -34,7 +34,7 @@ const thesource = async () => {
     await page.waitForTimeout(5000);
     let bosecards = await page.$$(productListTag)
     const bosecardDetails = await Promise.all(bosecards.map(card => extractDetailsFromCard(card)))  
-    if (browser) await browser.close();
+  
 
     await page.goto(sonyurl);
     await page.waitForTimeout(5000);
@@ -42,11 +42,14 @@ const thesource = async () => {
     const sonycardDetails = await Promise.all(sonycards.map(card => extractDetailsFromCard(card)))  
     let total = [...tplinkcardDetails, ...bosecardDetails, ...sonycardDetails]
     total = total.filter(item => item.price.includes(".96"))
+    if (browser) await browser.close();
     return total
     } catch (e) {
         console.log(e)
         if (browser) await browser.close();
-        return []
+        return {error: JSON.stringify(e)}
+    }finally{
+        if (browser) await browser.close();
     }
     
 }

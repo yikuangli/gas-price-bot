@@ -24,22 +24,23 @@ const thesource = async () => {
     try {
     const browser = await chromium.launch();
     const page = await browser.newPage();
-    await page.goto(tplinkweburl);
-    await page.waitForTimeout(5000);
-    let cards = await page.$$(productListTag)
-    const tplinkcardDetails = await Promise.all(cards.map(card => extractDetailsFromCard(card)))
-    
+
+    await page.goto(sonyurl);
+    await page.waitForTimeout(10000);
+    let sonycards = await page.$$(productListTag)
+    const sonycardDetails = await Promise.all(sonycards.map(card => extractDetailsFromCard(card)))  
    
     await page.goto(boseurl);
-    await page.waitForTimeout(5000);
+    await page.waitForTimeout(10000);
     let bosecards = await page.$$(productListTag)
     const bosecardDetails = await Promise.all(bosecards.map(card => extractDetailsFromCard(card)))  
   
-
-    await page.goto(sonyurl);
-    await page.waitForTimeout(5000);
-    let sonycards = await page.$$(productListTag)
-    const sonycardDetails = await Promise.all(sonycards.map(card => extractDetailsFromCard(card)))  
+    await page.goto(tplinkweburl);
+    await page.waitForTimeout(10000);
+    let cards = await page.$$(productListTag)
+    const tplinkcardDetails = await Promise.all(cards.map(card => extractDetailsFromCard(card)))
+    
+  
     let total = [...tplinkcardDetails, ...bosecardDetails, ...sonycardDetails]
     total = total.filter(item => item.price.includes(".96"))
     if (browser) await browser.close();

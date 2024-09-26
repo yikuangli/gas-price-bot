@@ -114,8 +114,14 @@ var clearPriceItemCount
 const thesourceCheck = async () => {
     try {
         let stockList = await thesource()
-        
-        if (stockList.length > 0) {
+        if (stockList.error) {
+            await client.channels.fetch("1177446494509477908").then(channel => {
+                // Send the top 1000 characters of the error string
+                const errorMessage = stockList.error.toString().substring(0, 1000);
+                channel.send(`Error from The Source (first 1000 characters):\n\`\`\`${errorMessage}\`\`\``);
+                // channel.send(stockList.error)
+            })
+        } else if (stockList.length > 0) {
             await client.channels.fetch("843244697577062414").then(channel => {
 
                 let message = "```";
@@ -127,14 +133,16 @@ const thesourceCheck = async () => {
                     message += "\n <@650752284380233734>"
                     channel.send(message)
                 }
-                
+
                 // channel.send(e)
             })
         }
         clearPriceItemCount = stockList.length
     } catch (e) {
         await client.channels.fetch("1177446494509477908").then(channel => {
-            channel.send(`error on thesource`)
+            const errorMessage = e.toString().substring(0, 1000);
+            channel.send(`Error from The Source (first 1000 characters):\n\`\`\`${errorMessage}\`\`\``);
+            // channel.send(`error on thesource`)
             // channel.send(e)
         })
     }

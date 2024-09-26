@@ -47,7 +47,7 @@ const thesource = async () => {
     } catch (e) {
         console.log(e)
         if (browser) await browser.close();
-        return {error: JSON.stringify(e)}
+        return {error: e.toString()}
     }finally{
         if (browser) await browser.close();
     }

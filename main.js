@@ -4,6 +4,7 @@ const { token } = require('./config.json');
 const { scraper } = require('./scraper/scrape')
 const { rfdeals } = require('./scraper/redflag')
 const { thesource } = require('./scraper/thesource')
+const { scrapeTrainInfo } = require('./scraper/gotrain')
 const autoPostConfig = require('./autopost.json')
 const fs = require("fs");
 const rfconfig = {
@@ -88,6 +89,25 @@ const rdDealsCheck = async () => {
 
 }
 var clearPriceItemCount
+
+const gotrainCheck = async () => {
+    try {
+        let info = await scrapeTrainInfo()
+        if (info.length > 0) {
+            await client.channels.fetch("1298505394574065726").then(channel => {
+                let message = "```";
+                for (let train of info) {
+                    message += `${train.departureStopsDisplay}  |  ${train.scheduledTime}  | ${train.platform}  | ${train.status}\n`
+                }
+                message += "``` \n <@650752284380233734>"
+                channel.send(message)
+
+            })
+        }
+    } catch (e) {
+        console.log(e)
+    }
+}
 const thesourceCheck = async () => {
     try {
         let stockList = await thesource()
@@ -153,8 +173,10 @@ client.once('ready', async () => {
         lastCheckDate = a[4]
     }, 900 * 1000);
     await rfdeals(rfconfig, true);
+    setInterval(gotrainCheck, 5 * 60 * 1000);
     setTimeout(rdDealsCheck, 300 * 1000);
     setTimeout(thesourceCheck, 30 * 1000);
+    
     // for (channelId in autoPostConfig) {
     //     setAutoMessage(
     //         client,

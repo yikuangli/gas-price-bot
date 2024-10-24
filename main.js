@@ -92,7 +92,7 @@ var clearPriceItemCount
 
 const gotrainCheck = async () => {
     try {
-        let info = await scrapeTrainInfo()
+        let info = await scrapeTrainInfo(true)
         if (info.length > 0) {
             await client.channels.fetch("1298505394574065726").then(channel => {
                 let message = "```";
@@ -173,9 +173,9 @@ client.once('ready', async () => {
         lastCheckDate = a[4]
     }, 900 * 1000);
     await rfdeals(rfconfig, true);
-    setInterval(gotrainCheck, 5 * 60 * 1000);
+    setInterval(gotrainCheck, 4 * 60 * 1000);
     setTimeout(rdDealsCheck, 300 * 1000);
-    setTimeout(thesourceCheck, 30 * 1000);
+    // setTimeout(thesourceCheck, 30 * 1000);
     
     // for (channelId in autoPostConfig) {
     //     setAutoMessage(

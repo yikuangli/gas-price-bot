@@ -1,5 +1,23 @@
 const { chromium } = require('playwright');
 
+function inTimeRanges(timeRanges) {
+    const now = new Date();
+    const currentTime = now.getHours() * 60 + now.getMinutes();
+
+    return timeRanges.some(range => {
+        const [start, end] = range.map(time => {
+            const [hours, minutes] = time.split(':').map(Number);
+            return hours * 60 + minutes;
+        });
+
+        if (start <= end) {
+            return currentTime >= start && currentTime <= end;
+        } else {
+            return currentTime >= start || currentTime <= end;
+        }
+    });
+}
+
 // Function to scrape train information
 async function scrapeTrainInfo(filter = false) {
     // Get the current time
@@ -8,9 +26,7 @@ async function scrapeTrainInfo(filter = false) {
     const currentMinute = now.getMinutes();
 
     // Check if the current time is before 07:45 or after 08:15
-    if (filter && (
-        (currentHour < 7) || (currentHour === 7 && currentMinute < 45) || (currentHour > 8) || (currentHour === 8 && currentMinute > 15)
-    )) {
+    if (filter && !inTimeRanges([["07:45", "08:15"]])) {
         return [];
     }
 
@@ -35,10 +51,7 @@ async function scrapeTrainInfo(filter = false) {
 
         // Close the browser
         if (browser) await browser.close();
-        if (info.filter(v => (v.scheduledTime.includes("07:59") || v.scheduledTime.includes("08:14")) || !filter).length > 0) {
-            return info//info.filter(v => v.departureStopsDisplay.includes("Union Station"))
-        }
-        return []
+        return info
     } catch (error) {
         if (browser) await browser.close();
         console.error('Error scraping train info:', error);
@@ -53,7 +66,7 @@ module.exports = { scrapeTrainInfo }
 
 if (require.main === module) {
 
-    scrapeTrainInfo(url).then(v => {
+    scrapeTrainInfo(true).then(v => {
         console.log(v)
     })
 

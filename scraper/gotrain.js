@@ -1,8 +1,10 @@
 const { chromium } = require('playwright');
 
 function inTimeRanges(timeRanges) {
-    const now = new Date();
-    const currentTime = now.getHours() * 60 + now.getMinutes();
+    // Get the current time in the "America/Toronto" time zone
+    const now = new Date().toLocaleString("en-US", { timeZone: "America/Toronto" });
+    const [hours, minutes] = new Date(now).toTimeString().split(':').map(Number);
+    const currentTime = hours * 60 + minutes;
 
     return timeRanges.some(range => {
         const [start, end] = range.map(time => {
@@ -17,6 +19,7 @@ function inTimeRanges(timeRanges) {
         }
     });
 }
+
 
 // Function to scrape train information
 async function scrapeTrainInfo(filter = false) {

@@ -51,10 +51,10 @@ async function scrapeTrainInfo(filter = false) {
             const status = await departures.nth(i).locator('[data-testid="status-cell-value"]').textContent();
             info.push({ departureStopsDisplay: departureStopsDisplay.trim(), scheduledTime: scheduledTime.trim(), platform: platform.trim(), status: status.trim() })
         }
-
+        let desiredTime = ["07:59", "08:14"]
         // Close the browser
         if (browser) await browser.close();
-        return info
+        return info.filter(v => v.departureStopsDisplay.includes("Union Station")).filter(v=> desiredTime.includes(v));
     } catch (error) {
         if (browser) await browser.close();
         console.error('Error scraping train info:', error);

@@ -54,7 +54,7 @@ async function scrapeTrainInfo(filter = false) {
         let desiredTime = ["07:59", "08:14"]
         // Close the browser
         if (browser) await browser.close();
-        return info.filter(v => v.departureStopsDisplay.includes("Union Station")).filter(v=> desiredTime.includes(v));
+        return info.filter(v => desiredTime.includes(v.scheduledTime));
     } catch (error) {
         if (browser) await browser.close();
         console.error('Error scraping train info:', error);

@@ -21,43 +21,75 @@ function inTimeRanges(timeRanges) {
 }
 
 
+
+const configs = [{
+    url: "https://www.gotransit.com/en/find-a-station-or-stop/mp/routes-departures?q=departures",
+    desiredTime: ["07:59", "08:14"],
+    trainID: null,
+    searchTimeRange: [["07:45", "08:15"]]
+},
+{
+    url: "https://www.gotransit.com/en/find-a-station-or-stop/un/routes-departures",
+    desiredTime: ["16:38", "17:08", "17:23"],
+    trainID: "Barrie",
+    searchTimeRange: [["16:30", "17:30"]]
+}
+]
+
+
+// Function to scrape train information
+
 // Function to scrape train information
 async function scrapeTrainInfo(filter = false) {
-    // Get the current time
-    const now = new Date();
-    const currentHour = now.getHours();
-    const currentMinute = now.getMinutes();
+    let config;
 
-    // Check if the current time is before 07:45 or after 08:15
-    if (filter && !inTimeRanges([["07:45", "08:15"]])) {
+    for (const v of configs) {
+        if (!(filter && !inTimeRanges(v.searchTimeRange))) {
+            config = v;
+            break; // Exit the loop after finding the first matching config
+        }
+    }
+
+    if (!config) {
         return [];
     }
 
+    let browser; // Declare browser outside the try block
+
     try {
-        const url = 'https://www.gotransit.com/en/find-a-station-or-stop/mp/routes-departures?q=departures';
+        const url = config.url;
         // Launch the browser
-        const browser = await chromium.launch();
+        browser = await chromium.launch();
         const page = await browser.newPage();
         await page.goto(url);
 
         // Extract multiple train/bus information
         const departures = await page.locator('[data-testid="departures-accordion-drawer-heading-container"]');
         const count = await departures.count();
-        let info = []
+        let info = [];
         for (let i = 0; i < count; i++) {
+            const trainID = await departures.nth(i).locator('[data-testid="departures-service-name"]').textContent();
             const departureStopsDisplay = await departures.nth(i).locator('[data-testid="departures-stops-display"]').textContent();
             const scheduledTime = await departures.nth(i).locator('[data-testid="scheduled-cell-value"]').textContent();
             const platform = await departures.nth(i).locator('[data-testid="platform-cell-value"]').textContent();
             const status = await departures.nth(i).locator('[data-testid="status-cell-value"]').textContent();
-            info.push({ departureStopsDisplay: departureStopsDisplay.trim(), scheduledTime: scheduledTime.trim(), platform: platform.trim(), status: status.trim() })
+            info.push({
+                trainID: trainID.trim(),
+                departureStopsDisplay: departureStopsDisplay.trim(),
+                scheduledTime: scheduledTime.trim(),
+                platform: platform.trim(),
+                status: status.trim()
+            });
         }
-        let desiredTime = ["07:59", "08:14"]
         // Close the browser
         if (browser) await browser.close();
-        return info.filter(v => desiredTime.includes(v.scheduledTime));
+        return info
+            .filter(v => config.desiredTime.includes(v.scheduledTime))
+            .filter(v => !config.trainID || v.trainID.includes(config.trainID));
     } catch (error) {
         if (browser) await browser.close();
         console.error('Error scraping train info:', error);
+        return []; // Return an empty array in case of error
     }
 }
 // Replace with the URL that you want to scrape

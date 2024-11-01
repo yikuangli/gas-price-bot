@@ -81,7 +81,8 @@ const rdDealsCheck = async () => {
     } catch (e) {
         console.log(e)
         await client.channels.fetch("1177446494509477908").then(channel => {
-            channel.send(`error on rdflag`)
+            const errorMessage = e.toString().substring(0, 1000);
+            channel.send(`Error from Redflag Deals:\n\`\`\`${errorMessage}\`\`\``);
             // channel.send(e)
         })
     }
@@ -96,10 +97,16 @@ const gotrainCheck = async () => {
         if (info.length > 0) {
             await client.channels.fetch("1298505394574065726").then(channel => {
                 let message = "```";
+                let needMention = false
                 for (let train of info) {
                     message += `${train.departureStopsDisplay}  |  ${train.scheduledTime}  | ${train.platform}  | ${train.status}\n`
+                    if (train.status !== "On Time") {
+                        needMention = true
+                    }
                 }
-                message += "``` \n <@650752284380233734>"
+                if (needMention) {
+                    message += "``` \n <@650752284380233734> <@745485071045361704> <@787864790507716608> <@381511267497803776>"
+                }
                 channel.send(message)
 
             })
@@ -175,8 +182,8 @@ client.once('ready', async () => {
     await rfdeals(rfconfig, true);
     setInterval(async () => {
         let a = await gotrainCheck()
-    }, 4 * 60 * 1000);
-    setTimeout(rdDealsCheck, 300 * 1000);
+    }, 1 * 60 * 1000);
+    setTimeout(rdDealsCheck, 600 * 1000);
     // setTimeout(thesourceCheck, 30 * 1000);
 
     // for (channelId in autoPostConfig) {

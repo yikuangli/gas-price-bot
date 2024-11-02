@@ -42,7 +42,7 @@ const configs = [{
 // Function to scrape train information
 async function scrapeTrainInfo(filter = false) {
     let config;
-
+    return [];
     for (const v of configs) {
         if (!(filter && !inTimeRanges(v.searchTimeRange))) {
             config = v;

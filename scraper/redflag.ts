@@ -1,5 +1,4 @@
 import { chromium, Page } from 'playwright';
-import { MongoDBService } from './mongodbservice';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -48,8 +47,6 @@ export async function scrapeNewsSite(config: any) {
                 urls.push(link)
             } else {
                 urls.push(`${config.baseURL}${link}`);
-
-                console.log(`${config.baseURL}${link}`)
             }
         }
     }
@@ -59,11 +56,6 @@ export async function scrapeNewsSite(config: any) {
     for (let url of urls) {
         try {
             await page.goto(url, { timeout: 60000 });
-            // const paragraphsTexts = await page.$$eval(config.articleSelectors.paragraphs, (elements: HTMLElement[]) => elements.map((element: HTMLElement) => element.innerText).join("\n"));
-            // const creationTime = await getText(page, config.articleSelectors.creationTime);
-            // const updateTime = await getText(page, config.articleSelectors.updateTime);
-            // const title = await getText(page, config.articleSelectors.title);
-            // const author = await getText(page, config.articleSelectors.author);
             const dataInList: any[] = []
             const test = await page.$$eval("dl.post_offer_fields > *",
                 (elements: HTMLElement[]) => {
@@ -71,19 +63,6 @@ export async function scrapeNewsSite(config: any) {
                         return element.innerText
                     })
                 });
-            console.log(test)
-            // const saveData = {
-            //     title: title,
-            //     content: paragraphsTexts,
-            //     author: author,
-            //     creationTime: creationTime,
-            //     updateTime: updateTime,
-            //     source: config.source,
-            //     url: url
-            // };
-            // returnList.push(saveData);
-            // const filePath = path.join(dirPath, `news-${((Date.now()) / 1000).toFixed(0)}.json`);
-            // fs.writeFileSync(filePath, JSON.stringify(saveData, null, 2));
         } catch (error) {
             console.error('Error navigating to:', url, error);
         }

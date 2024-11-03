@@ -79,7 +79,7 @@ const rdDealsCheck = async () => {
             })
         }
     } catch (e) {
-        console.log(e)
+        
         await client.channels.fetch("1177446494509477908").then(channel => {
             const errorMessage = e.toString().substring(0, 1000);
             channel.send(`Error from Redflag Deals:\n\`\`\`${errorMessage}\`\`\``);
@@ -101,7 +101,7 @@ const gotrainCheck = async () => {
                 for (let train of info) {
                     message += `${train.departureStopsDisplay}  |  ${train.scheduledTime}  | ${train.platform}  | ${train.status}\n`
                     if (train.status !== "On Time") {
-                        needMention = true
+                        // needMention = true
                     }
                 }
                 if (needMention) {
@@ -114,6 +114,8 @@ const gotrainCheck = async () => {
     } catch (e) {
         console.log(e)
     }
+
+    setTimeout(gotrainCheck, 1 * 60 * 1000)
 }
 const thesourceCheck = async () => {
     try {
@@ -180,9 +182,7 @@ client.once('ready', async () => {
         lastCheckDate = a[4]
     }, 900 * 1000);
     await rfdeals(rfconfig, true);
-    setInterval(async () => {
-        let a = await gotrainCheck()
-    }, 1 * 60 * 1000);
+    setTimeout(gotrainCheck, 1 * 60 * 1000);
     setTimeout(rdDealsCheck, 600 * 1000);
     // setTimeout(thesourceCheck, 30 * 1000);
 

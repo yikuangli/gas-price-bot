@@ -1,14 +1,11 @@
 const playwright = require("playwright");
 const chromium = playwright.chromium;
 
-
-let config = {
-    "baseURL": "https://forums.redflagdeals.com",
-    "newsListURL": "/hot-deals-f9/?sk=tt&rfd_sk=tt&sd=d",
-    "articleListSelector": `li.row.topic:not(.sticky):not(.deleted) ul.dropdown 
-    li:first-child a:first-child`,
-    "source": "Redflag Deals."
-}
+const config = {
+    baseURL: "https://forums.redflagdeals.com",
+    newsListURL: "/hot-deals-f9/?sk=tt&rfd_sk=tt&sd=d",
+    source: "RedFlagDeals"
+};
 
 const miniStack = [];
 const MAX_STACK_SIZE = 50; // Define the maximum size of the stack
@@ -22,76 +19,52 @@ function addToStack(item) {
 
 function isItemNew(item) {
     return !miniStack.some(stackItem =>
-        stackItem.url === item.url || (
-            stackItem.author === item.author && stackItem.time === item.time) ||
-        stackItem.title === item.title
+        stackItem.url === item.url ||
+        (stackItem.author === item.author && stackItem.time === item.time)
     );
 }
 
-
-
-
-
-let cardSelector = "li.row.topic:not(.sticky):not(.deleted)"
-
-let url = "ul.dropdown li:first-child a:first-child" // href
-let author = "span.thread_meta_author" // innerText
-let time = "span.first-post-time" // innerText
-
-const rfdeals = async (config, init = false) => {
-    // Load the configuration file
-    //const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+async function rfdeals(config, init = false) {
+    let browser = null;
     try {
-        const browser = await chromium.launch();
+        browser = await chromium.launch({ headless: true });
         const page = await browser.newPage();
-        await page.goto(`${config.baseURL}${config.newsListURL}`);
-        let finalItemList = [];
+        const targetURL = `${config.baseURL}${config.newsListURL}`;
+        console.log(`Navigating to ${targetURL}`);
+        await page.goto(targetURL, { waitUntil: 'networkidle' });
+
+        await page.waitForTimeout(1000); // Throttle requests
+
         const details = await extractCardDetails(page);
+        console.log(`Total items extracted: ${details.length}`);
         let newItems = [];
         for (let item of details) {
             if (isItemNew(item)) {
-                // Crawl the item
                 addToStack(item);
-                newItems.push(item)
+                newItems.push(item);
                 // ... your crawling logic ...
             } else {
-                break;
+                continue;
             }
         }
+        console.log(`New items found: ${newItems.length}`);
+        let finalItemList = [];
         if (!init) {
             newItems.forEach(item => {
                 finalItemList.push({
                     title: item.title,
                     content: `${item.url}`
-                })
-            })
-            //  console.log(newItems);
+                });
+            });
         }
-        if (browser) await browser.close();
         return finalItemList;
     } catch (e) {
+        console.error("Error when parsing:", e);
+        return [];
+    } finally {
         if (browser) await browser.close();
-        console.log("error when pareing")
-        return []
     }
-    // for (let url of urls) {
-    //     try {
-    //         await page.goto(url, { timeout: 60000 });
-    //         const dataInList = []
-    //         const test = await page.$$eval("dl.post_offer_fields > *",
-    //             (elements) => {
-    //                 return elements.map((element, index) => {
-    //                     return element.innerText
-    //                 })
-    //             });
-    //     } catch (error) {
-    //         console.error('Error navigating to:', url, error);
-    //     }
-    // }
-
-    // return returnList;
 }
-
 
 async function extractCardDetails(page) {
     // Selector strings
@@ -105,58 +78,68 @@ async function extractCardDetails(page) {
 
     // Function to extract details from a single card
     async function extractDetailsFromCard(card) {
-        const url = await card.$eval(urlSelector, a => a.href);
-        const author = await card.$eval(authorSelector, span => span.innerText);
-        const time = await card.$eval(timeSelector, span => span.innerText);
-        const title = await card.$eval(titleSelector, span => span.innerText)
-        let retailer = '';
-        // Try the first retailer selector
-        const retailerElement1 = await card.$(retailerSelector1);
-        if (retailerElement1) {
-            retailer = await retailerElement1.innerText();
-        }
+        try {
+            const url = await card.$eval(urlSelector, a => a.href);
+            const author = await card.$eval(authorSelector, span => span.innerText.trim());
+            const time = await card.$eval(timeSelector, span => span.innerText.trim());
+            const title = await card.$eval(titleSelector, span => span.innerText.trim());
+            let retailer = '';
 
-        // If the first selector didn't work, try the second
-        if (!retailer) {
-            const retailerElement2 = await card.$(retailerSelector2);
-            if (retailerElement2) {
-                const text = await retailerElement2.innerText();
-                // Extract retailer info from text, assuming it's in brackets "[retailer]"
-                const matches = text.match(/\[(.*?)\]/);
-                retailer = matches ? matches[1] : '';
+            // Try the first retailer selector
+            const retailerElement1 = await card.$(retailerSelector1);
+            if (retailerElement1) {
+                retailer = (await retailerElement1.innerText()).trim();
             }
+
+            // If the first selector didn't work, try the second
+            if (!retailer) {
+                const retailerElement2 = await card.$(retailerSelector2);
+                if (retailerElement2) {
+                    const text = (await retailerElement2.innerText()).trim();
+                    // Extract retailer info from text, assuming it's in brackets "[retailer]"
+                    const matches = text.match(/\[(.*?)\]/);
+                    retailer = matches ? matches[1].trim() : '';
+                }
+            }
+            return { url, author, time, title, retailer };
+        } catch (error) {
+            console.error('Error extracting details from card:', error);
+            return null; // Return null to indicate failure
         }
-        return { url, author, time, title, retailer };
     }
 
     // Get all cards
     const cards = await page.$$(cardSelector);
 
     // Map over each card and extract details
-    const cardDetails = await Promise.all(cards.map(card => extractDetailsFromCard(card)));
+    const cardDetails = (await Promise.all(cards.map(card => extractDetailsFromCard(card))))
+        .filter(detail => detail !== null);
 
     return cardDetails;
 }
 
-// Usage example
-// Assuming 'page' is your Playwright page object
-
-
-module.exports = { rfdeals }
+module.exports = { rfdeals };
 
 if (require.main === module) {
+    (async () => {
+        try {
+            await rfdeals(config, true);
+            console.log('Initial run completed.');
+        } catch (error) {
+            console.error('Error during initial run:', error);
+        }
 
-
-    `Name: Domain Name Generator
-    Description: I generate creative domain names based on your 
-    Link: https://chat.openai.com/g/g-IFxYLMRWG-domain-name-generator`
-
-
-    rfdeals(config,).then(a => {
-        console.log(a)
-    })
-
-    setInterval(async () => {
-        rfdeals(config)
-    }, 60 * 1000)
+        setInterval(async () => {
+            try {
+                const newItems = await rfdeals(config);
+                if (newItems.length > 0) {
+                    console.log('New items found:', newItems);
+                } else {
+                    console.log('No new items found.');
+                }
+            } catch (error) {
+                console.error('Error in interval function:', error);
+            }
+        }, 60 * 1000);
+    })();
 }

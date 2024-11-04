@@ -79,14 +79,14 @@ const rdDealsCheck = async () => {
             })
         }
     } catch (e) {
-        
+
         await client.channels.fetch("1177446494509477908").then(channel => {
             const errorMessage = e.toString().substring(0, 1000);
             channel.send(`Error from Redflag Deals:\n\`\`\`${errorMessage}\`\`\``);
             // channel.send(e)
         })
     }
-    setTimeout(rdDealsCheck, 400 * 1000)
+    setTimeout(rdDealsCheck, 300 * 1000)
 
 }
 var clearPriceItemCount
@@ -106,6 +106,8 @@ const gotrainCheck = async () => {
                 }
                 if (needMention) {
                     message += "``` \n <@650752284380233734> <@745485071045361704> <@787864790507716608> <@381511267497803776>"
+                } else {
+                    message += "```"
                 }
                 channel.send(message)
 

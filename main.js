@@ -184,8 +184,9 @@ client.once('ready', async () => {
         lastCheckDate = a[4]
     }, 900 * 1000);
     await rfdeals(rfconfig, true);
-    setTimeout(gotrainCheck, 1 * 60 * 1000);
+    
     setTimeout(rdDealsCheck, 600 * 1000);
+    setTimeout(gotrainCheck, 1 * 60 * 1000);
     // setTimeout(thesourceCheck, 30 * 1000);
 
     // for (channelId in autoPostConfig) {

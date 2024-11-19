@@ -4,7 +4,7 @@ const chromium = playwright.chromium;
 // https://forums.redflagdeals.com/hot-deals-f9/?sk=t&rfd_sk=t&sd=d
 const config = {
     baseURL: "https://forums.redflagdeals.com",
-    newsListURL: "/hot-deals-f9/?sk=t&rfd_sk=t&sd=d",
+    newsListURL: "/hot-deals-f9/?sk=tt&rfd_sk=tt&sd=d",
     source: "RedFlagDeals"
 };
 

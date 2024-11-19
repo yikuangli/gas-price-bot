@@ -9,7 +9,7 @@ const autoPostConfig = require('./autopost.json')
 const fs = require("fs");
 const rfconfig = {
     "baseURL": "https://forums.redflagdeals.com",
-    "newsListURL": "/hot-deals-f9/?sk=t&rfd_sk=t&sd=d",
+    "newsListURL": "/hot-deals-f9/?sk=tt&rfd_sk=tt&sd=d",
     "articleListSelector": `li.row.topic:not(.sticky):not(.deleted) ul.dropdown 
     li:first-child a:first-child`,
     "source": "Redflag Deals."

@@ -1,9 +1,10 @@
 const playwright = require("playwright");
 const chromium = playwright.chromium;
 
+// https://forums.redflagdeals.com/hot-deals-f9/?sk=t&rfd_sk=t&sd=d
 const config = {
     baseURL: "https://forums.redflagdeals.com",
-    newsListURL: "/hot-deals-f9/?sk=tt&rfd_sk=tt&sd=d",
+    newsListURL: "/hot-deals-f9/?sk=t&rfd_sk=t&sd=d",
     source: "RedFlagDeals"
 };
 
@@ -31,7 +32,7 @@ async function rfdeals(config, init = false) {
         const page = await browser.newPage();
         const targetURL = `${config.baseURL}${config.newsListURL}`;
         console.log(`Navigating to ${targetURL}`);
-        await page.goto(targetURL, { waitUntil: 'networkidle' });
+        await page.goto(targetURL,);
 
         await page.waitForTimeout(1000); // Throttle requests
 

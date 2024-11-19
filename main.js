@@ -9,7 +9,7 @@ const autoPostConfig = require('./autopost.json')
 const fs = require("fs");
 const rfconfig = {
     "baseURL": "https://forums.redflagdeals.com",
-    "newsListURL": "/hot-deals-f9/?sk=tt&rfd_sk=tt&sd=d",
+    "newsListURL": "/hot-deals-f9/?sk=t&rfd_sk=t&sd=d",
     "articleListSelector": `li.row.topic:not(.sticky):not(.deleted) ul.dropdown 
     li:first-child a:first-child`,
     "source": "Redflag Deals."
@@ -157,9 +157,41 @@ const thesourceCheck = async () => {
     setTimeout(thesourceCheck, 310 * 1000)
 }
 
+
+async function fetchAllMessagesFromChannel(channelId) {
+    try {
+        const channel = await client.channels.fetch(channelId);
+        if (!channel.isText()) {
+            console.error(`Channel with ID ${channelId} is not a text channel.`);
+            return;
+        }
+
+        let messages = [];
+        let lastMessageId;
+        while (true) {
+            const fetchedMessages = await channel.messages.fetch({ limit: 100, before: lastMessageId });
+            if (fetchedMessages.size === 0) break;
+            messages = messages.concat(fetchedMessages.map(message => message.content));
+            lastMessageId = fetchedMessages.last().id;
+        }
+
+        console.log(`Fetched ${messages.length} messages from channel ${channelId}`);
+        return messages; // Return or use messages as needed
+    } catch (error) {
+        console.error(`Failed to fetch messages from channel ${channelId}:`, error);
+    }
+}
+
+
 // When the client is ready, run this code (only once)
 client.once('ready', async () => {
     let a = await scraper()
+    // const messages = await fetchAllMessagesFromChannel('1302351355746320487');
+    // if (messages) {
+    //     messages.forEach((message, index) => {
+    //         console.log(`Message ${index + 1}: ${message}`);
+    //     });
+    // }
     client.user.setPresence({ activities: [{ name: `${a[3]}` }], status: 'idle' });
     lastCheckDate = ""
     testconfig = {

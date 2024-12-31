@@ -32,18 +32,54 @@ async function rfdeals(config, init = false) {
         const page = await browser.newPage();
         const targetURL = `${config.baseURL}${config.newsListURL}`;
         console.log(`Navigating to ${targetURL}`);
-        await page.goto(targetURL,);
+        await page.goto(targetURL);
 
         await page.waitForTimeout(1000); // Throttle requests
+        // const bodyContent = await page.evaluate(() => document.body.innerHTML);
+        // console.log("Page body content:", bodyContent);
+        // Get content within site_container div
+        const topicList = await page.$('ul.topiclist.topics.with_categories');
+        // Get all li elements and print their data-thread-id attributes
+        // const liElements = await topicList.$$('li');
+        // for (const li of liElements) {
+        //     const threadId = await li.evaluate(node => node.getAttribute('data-thread-id'));
+        //     console.log(`Thread ID: ${threadId}`);
+        // }
+        // const topicListContent = await topicList.evaluate((node) => node.innerHTML);
+        // console.log("Topic list content:", topicListContent);
+        // if (!topicList) {
+        //     console.log("No topic list found");
+        //     return [];
+        // }
 
-        const details = await extractCardDetails(page);
+        // const topics = await topicList.$$('li:not(.sticky):not(.deleted)');
+        // console.log(`Found ${topics.length} topics`);
+
+        // for (const topic of topics) {
+        //     const topicContent = await topic.evaluate(node => node.textContent);
+        //     console.log("Topic content:", topicContent.trim());
+        // }
+   
+       
+       
+        // const topicListContent = await page.evaluate(() => {
+        //     const topicList = document.querySelector('ul.topiclist.topics.with_categories');
+        //     return topicList ? topicList.innerHTML : '';
+        // });
+        // console.log("Topic list content:", topicList);
+        // const containerContent = await page.evaluate(() => {
+        //     const container = document.querySelector('#site_container');
+        //     return container ? container.innerHTML : '';
+        // });
+        // console.log("Site container content:", containerContent);
+        const details = await extractCardDetails(topicList);
+
         console.log(`Total items extracted: ${details.length}`);
         let newItems = [];
         for (let item of details) {
             if (isItemNew(item)) {
                 addToStack(item);
                 newItems.push(item);
-                // ... your crawling logic ...
             } else {
                 continue;
             }
@@ -69,8 +105,8 @@ async function rfdeals(config, init = false) {
 
 async function extractCardDetails(page) {
     // Selector strings
-    const cardSelector = "li.row.topic:not(.sticky):not(.deleted)";
-    const urlSelector = "ul.dropdown li:first-child a:first-child";
+    const cardSelector = "li:not(.sticky):not(.deleted)";
+    const urlSelector = "a.topic_title_link"; //"a.topic_title_link"; //"ul.dropdown li:first-child a:first-child";
     const authorSelector = "span.thread_meta_author";
     const timeSelector = "span.first-post-time";
     const titleSelector = "a.topic_title_link";
@@ -80,6 +116,12 @@ async function extractCardDetails(page) {
     // Function to extract details from a single card
     async function extractDetailsFromCard(card) {
         try {
+            console.log('Card:', await card.evaluate(el => el.innerHTML));
+            // Get the element and print its innerHTML
+            // const urlElement = await card.$(urlSelector);
+            // const innerHTML = await page.evaluate(el => el.innerHTML, urlElement);
+            // console.log('URL Element innerHTML:', innerHTML);
+
             const url = await card.$eval(urlSelector, a => a.href);
             const author = await card.$eval(authorSelector, span => span.innerText.trim());
             const time = await card.$eval(timeSelector, span => span.innerText.trim());
@@ -111,7 +153,7 @@ async function extractCardDetails(page) {
 
     // Get all cards
     const cards = await page.$$(cardSelector);
-
+    let singleCard = await extractDetailsFromCard(cards[4])
     // Map over each card and extract details
     const cardDetails = (await Promise.all(cards.map(card => extractDetailsFromCard(card))))
         .filter(detail => detail !== null);

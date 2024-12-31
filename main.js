@@ -86,7 +86,7 @@ const rdDealsCheck = async () => {
             // channel.send(e)
         })
     }
-    setTimeout(rdDealsCheck, 300 * 1000)
+    // setTimeout(rdDealsCheck, 300 * 1000) rfdeals scraper is not working
 
 }
 var clearPriceItemCount
@@ -215,9 +215,9 @@ client.once('ready', async () => {
         }
         lastCheckDate = a[4]
     }, 900 * 1000);
-    await rfdeals(rfconfig, true);
-    
-    setTimeout(rdDealsCheck, 600 * 1000);
+    // await rfdeals(rfconfig, true); rfdeals scraper is not working
+
+    // setTimeout(rdDealsCheck, 600 * 1000); rfdeals scraper is not working
     setTimeout(gotrainCheck, 1 * 60 * 1000);
     // setTimeout(thesourceCheck, 30 * 1000);
 

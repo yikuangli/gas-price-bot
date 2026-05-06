@@ -1,4 +1,9 @@
 {
     "token": "bot token here",
-    "clientId": "bot id here"
+    "clientId": "bot id here",
+    "redflagForumChannelId": "discord forum channel id here",
+    "redflagErrorChannelId": "discord error channel id here",
+    "redflagCheckIntervalMs": 300000,
+    "redflagStartDelayMs": 60000,
+    "redflagStateFile": "redflag-seen.json"
 }

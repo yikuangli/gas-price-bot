@@ -1,6 +1,7 @@
 
 const { Client, GatewayIntentBits, InteractionResponse, ThreadAutoArchiveDuration } = require('discord.js');
-const { token } = require('./config.json');
+const botConfig = require('./config.json');
+const { token } = botConfig;
 const { scraper } = require('./scraper/scrape')
 const { rfdeals } = require('./scraper/redflag')
 const { thesource } = require('./scraper/thesource')
@@ -10,10 +11,19 @@ const fs = require("fs");
 const rfconfig = {
     "baseURL": "https://forums.redflagdeals.com",
     "newsListURL": "/hot-deals-f9/?sk=tt&rfd_sk=tt&sd=d",
-    "articleListSelector": `li.row.topic:not(.sticky):not(.deleted) ul.dropdown 
-    li:first-child a:first-child`,
+    "stateFile": process.env.REDFLAG_STATE_FILE || botConfig.redflagStateFile,
     "source": "Redflag Deals."
 }
+
+const getConfigNumber = (envName, configName, fallback) => {
+    const value = Number(process.env[envName] || botConfig[configName]);
+    return Number.isFinite(value) && value > 0 ? value : fallback;
+}
+
+const REDFLAG_FORUM_CHANNEL_ID = process.env.REDFLAG_FORUM_CHANNEL_ID || botConfig.redflagForumChannelId || "1177093758853054624";
+const REDFLAG_ERROR_CHANNEL_ID = process.env.REDFLAG_ERROR_CHANNEL_ID || botConfig.redflagErrorChannelId || "1177446494509477908";
+const REDFLAG_CHECK_INTERVAL_MS = getConfigNumber("REDFLAG_CHECK_INTERVAL_MS", "redflagCheckIntervalMs", 5 * 60 * 1000);
+const REDFLAG_START_DELAY_MS = getConfigNumber("REDFLAG_START_DELAY_MS", "redflagStartDelayMs", 60 * 1000);
 // Create a new client instance
 
 const setAutoMessage = (client, clientId, delay, frequency, setTime) => {
@@ -60,33 +70,65 @@ const saveAutopost = (clientId, delay, frequency, setTime) => {
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
-const rdDealsCheck = async () => {
+const truncateDiscordThreadName = (title) => {
+    const cleanTitle = title.replace(/\s+/g, " ").trim();
+    if (cleanTitle.length <= 100) return cleanTitle;
+    return `${cleanTitle.substring(0, 97)}...`;
+}
+
+const sendRedflagError = async (error) => {
     try {
-        let formId = "1177093758853054624"
+        const channel = await client.channels.fetch(REDFLAG_ERROR_CHANNEL_ID);
+        const errorMessage = error.toString().substring(0, 1000);
+        await channel.send(`Error from Redflag Deals:\n\`\`\`${errorMessage}\`\`\``);
+    } catch (sendError) {
+        console.error("Could not send RedFlagDeals error to Discord:", sendError);
+    }
+}
+
+let redflagDealsInitialized = false;
+
+const initializeRedflagDeals = async () => {
+    try {
+        await rfdeals(rfconfig, true);
+        redflagDealsInitialized = true;
+        setTimeout(rdDealsCheck, REDFLAG_START_DELAY_MS);
+    } catch (error) {
+        await sendRedflagError(error);
+        setTimeout(initializeRedflagDeals, REDFLAG_CHECK_INTERVAL_MS);
+    }
+}
+
+const rdDealsCheck = async () => {
+    let shouldScheduleNextCheck = true;
+    try {
+        if (!redflagDealsInitialized) {
+            shouldScheduleNextCheck = false;
+            await initializeRedflagDeals();
+            return;
+        }
+
         let posts = await rfdeals(rfconfig);
         if (posts.length > 0) {
-            await client.channels.fetch(formId).then(async channel => {
-                for (let post of posts) {
-                    await channel.threads.create({
-                        name: post.title,
-                        autoArchiveDuration: ThreadAutoArchiveDuration.OneHour,
-                        message: {
-                            content: post.content,
-                        },
-                        reason: '',
-                    }).catch(console.error);
-                }
-            })
+            const channel = await client.channels.fetch(REDFLAG_FORUM_CHANNEL_ID);
+            for (let post of posts.slice().reverse()) {
+                await channel.threads.create({
+                    name: truncateDiscordThreadName(post.title),
+                    autoArchiveDuration: ThreadAutoArchiveDuration.OneHour,
+                    message: {
+                        content: post.content,
+                    },
+                    reason: 'New RedFlagDeals thread',
+                }).catch(console.error);
+            }
         }
     } catch (e) {
-
-        await client.channels.fetch("1177446494509477908").then(channel => {
-            const errorMessage = e.toString().substring(0, 1000);
-            channel.send(`Error from Redflag Deals:\n\`\`\`${errorMessage}\`\`\``);
-            // channel.send(e)
-        })
+        await sendRedflagError(e);
+    } finally {
+        if (shouldScheduleNextCheck) {
+            setTimeout(rdDealsCheck, REDFLAG_CHECK_INTERVAL_MS)
+        }
     }
-    // setTimeout(rdDealsCheck, 300 * 1000) rfdeals scraper is not working
 
 }
 var clearPriceItemCount
@@ -215,9 +257,7 @@ client.once('ready', async () => {
         }
         lastCheckDate = a[4]
     }, 900 * 1000);
-    // await rfdeals(rfconfig, true); rfdeals scraper is not working
-
-    // setTimeout(rdDealsCheck, 600 * 1000); rfdeals scraper is not working
+    await initializeRedflagDeals();
     setTimeout(gotrainCheck, 1 * 60 * 1000);
     // setTimeout(thesourceCheck, 30 * 1000);
 

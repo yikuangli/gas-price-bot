@@ -1,188 +1,181 @@
-const playwright = require("playwright");
-const chromium = playwright.chromium;
+const axios = require("axios");
+const { JSDOM } = require("jsdom");
+const fs = require("fs");
+const path = require("path");
 
-// https://forums.redflagdeals.com/hot-deals-f9/?sk=t&rfd_sk=t&sd=d
-const config = {
+// https://forums.redflagdeals.com/hot-deals-f9/?sk=tt&rfd_sk=tt&sd=d
+const defaultConfig = {
     baseURL: "https://forums.redflagdeals.com",
     newsListURL: "/hot-deals-f9/?sk=tt&rfd_sk=tt&sd=d",
-    source: "RedFlagDeals"
+    source: "RedFlagDeals",
+    stateFile: path.join(__dirname, "..", "redflag-seen.json"),
+    maxSeenItems: 200,
 };
 
-const miniStack = [];
-const MAX_STACK_SIZE = 50; // Define the maximum size of the stack
+let seenThreadIds = null;
 
-function addToStack(item) {
-    if (miniStack.length >= MAX_STACK_SIZE) {
-        miniStack.shift(); // Remove the oldest item
-    }
-    miniStack.push(item); // Add the new item
+function normalizeText(value) {
+    return (value || "").replace(/\s+/g, " ").trim();
 }
 
-function isItemNew(item) {
-    return !miniStack.some(stackItem =>
-        stackItem.url === item.url ||
-        (stackItem.author === item.author && stackItem.time === item.time)
-    );
+function absoluteUrl(baseURL, href) {
+    return new URL(href, baseURL).toString();
 }
 
-async function rfdeals(config, init = false) {
-    let browser = null;
+function getText(root, selector) {
+    const element = root.querySelector(selector);
+    return element ? normalizeText(element.textContent) : "";
+}
+
+function getStat(root, selector) {
+    const text = getText(root, selector);
+    const match = text.match(/-?\d[\d,]*/);
+    return match ? match[0] : "";
+}
+
+function extractThreadId(card, link) {
+    const fromCard = card.getAttribute("data-thread-id");
+    const fromLink = link && link.getAttribute("data-thread-id");
+    const href = link && link.getAttribute("href");
+    const fromHref = href && href.match(/-(\d+)\/?(?:[#?].*)?$/);
+
+    return fromCard || fromLink || (fromHref && fromHref[1]) || "";
+}
+
+function readSeenThreadIds(config) {
+    if (seenThreadIds) return seenThreadIds;
+
     try {
-        browser = await chromium.launch({ headless: true });
-        const page = await browser.newPage();
-        const targetURL = `${config.baseURL}${config.newsListURL}`;
-        console.log(`Navigating to ${targetURL}`);
-        await page.goto(targetURL);
-
-        await page.waitForTimeout(1000); // Throttle requests
-        // const bodyContent = await page.evaluate(() => document.body.innerHTML);
-        // console.log("Page body content:", bodyContent);
-        // Get content within site_container div
-        const topicList = await page.$('ul.topiclist.topics.with_categories');
-        // Get all li elements and print their data-thread-id attributes
-        // const liElements = await topicList.$$('li');
-        // for (const li of liElements) {
-        //     const threadId = await li.evaluate(node => node.getAttribute('data-thread-id'));
-        //     console.log(`Thread ID: ${threadId}`);
-        // }
-        // const topicListContent = await topicList.evaluate((node) => node.innerHTML);
-        // console.log("Topic list content:", topicListContent);
-        // if (!topicList) {
-        //     console.log("No topic list found");
-        //     return [];
-        // }
-
-        // const topics = await topicList.$$('li:not(.sticky):not(.deleted)');
-        // console.log(`Found ${topics.length} topics`);
-
-        // for (const topic of topics) {
-        //     const topicContent = await topic.evaluate(node => node.textContent);
-        //     console.log("Topic content:", topicContent.trim());
-        // }
-   
-       
-       
-        // const topicListContent = await page.evaluate(() => {
-        //     const topicList = document.querySelector('ul.topiclist.topics.with_categories');
-        //     return topicList ? topicList.innerHTML : '';
-        // });
-        // console.log("Topic list content:", topicList);
-        // const containerContent = await page.evaluate(() => {
-        //     const container = document.querySelector('#site_container');
-        //     return container ? container.innerHTML : '';
-        // });
-        // console.log("Site container content:", containerContent);
-        const details = await extractCardDetails(topicList);
-
-        console.log(`Total items extracted: ${details.length}`);
-        let newItems = [];
-        for (let item of details) {
-            if (isItemNew(item)) {
-                addToStack(item);
-                newItems.push(item);
-            } else {
-                continue;
-            }
+        const raw = fs.readFileSync(config.stateFile, "utf8");
+        const parsed = JSON.parse(raw);
+        seenThreadIds = Array.isArray(parsed.threadIds) ? parsed.threadIds : [];
+    } catch (error) {
+        if (error.code !== "ENOENT") {
+            console.warn(`Could not read RedFlagDeals state file: ${error.message}`);
         }
-        console.log(`New items found: ${newItems.length}`);
-        let finalItemList = [];
-        if (!init) {
-            newItems.forEach(item => {
-                finalItemList.push({
-                    title: item.title,
-                    content: `${item.url}`
-                });
-            });
-        }
-        return finalItemList;
-    } catch (e) {
-        console.error("Error when parsing:", e);
+        seenThreadIds = [];
+    }
+
+    return seenThreadIds;
+}
+
+function writeSeenThreadIds(config) {
+    if (!config.stateFile) return;
+
+    const state = {
+        updatedAt: new Date().toISOString(),
+        threadIds: seenThreadIds,
+    };
+    fs.mkdirSync(path.dirname(config.stateFile), { recursive: true });
+    fs.writeFileSync(config.stateFile, JSON.stringify(state, null, 2));
+}
+
+function rememberThreadId(config, threadId) {
+    if (!threadId) return;
+
+    readSeenThreadIds(config);
+    seenThreadIds = seenThreadIds.filter(id => id !== threadId);
+    seenThreadIds.unshift(threadId);
+    seenThreadIds = seenThreadIds.slice(0, config.maxSeenItems);
+}
+
+function parseDealsFromHtml(html, config = defaultConfig) {
+    const document = new JSDOM(html).window.document;
+    const cards = [...document.querySelectorAll("li.topic-card.topic:not(.deleted)")];
+
+    if (cards.length === 0) {
+        throw new Error("RedFlagDeals parser found no deal cards. The forum markup may have changed again.");
+    }
+
+    return cards
+        .map(card => {
+            const link = card.querySelector("a.topic-card-info[href]");
+            const title = getText(card, "h3.thread_title");
+            const threadId = link ? extractThreadId(card, link) : "";
+
+            if (!link || !title || !threadId) return null;
+
+            const retailerText = getText(card, ".dealer_name");
+            const retailer = retailerText === "Retailer Unlisted" ? "" : retailerText;
+            const timeElement = card.querySelector("time.topic_time");
+            const imageElement = card.querySelector(".thread_image img[src]");
+            const savings = getText(card, ".savings");
+
+            return {
+                threadId,
+                title,
+                url: absoluteUrl(config.baseURL, link.getAttribute("href")),
+                retailer,
+                postedAt: timeElement ? timeElement.getAttribute("datetime") || "" : "",
+                postedAtText: timeElement ? normalizeText(timeElement.textContent) : "",
+                votes: getStat(card, ".votes.thread_stat"),
+                replies: getStat(card, ".posts.thread_stat"),
+                savings,
+                imageUrl: imageElement ? absoluteUrl(config.baseURL, imageElement.getAttribute("src")) : "",
+            };
+        })
+        .filter(Boolean);
+}
+
+function buildDiscordPost(item) {
+    const lines = [
+        `**${item.title}**`,
+        item.retailer ? `Retailer: ${item.retailer}` : "",
+        item.savings ? `Price: ${item.savings}` : "",
+        item.postedAtText ? `Posted: ${item.postedAtText}` : "",
+        item.votes ? `Votes: ${item.votes}` : "",
+        item.replies ? `Replies: ${item.replies}` : "",
+        item.url,
+    ].filter(Boolean);
+
+    return {
+        title: item.title,
+        content: lines.join("\n").slice(0, 1900),
+        threadId: item.threadId,
+        url: item.url,
+    };
+}
+
+async function rfdeals(rawConfig = {}, init = false) {
+    const configOverrides = Object.fromEntries(
+        Object.entries(rawConfig).filter(([, value]) => value !== undefined)
+    );
+    const config = { ...defaultConfig, ...configOverrides };
+    const targetURL = absoluteUrl(config.baseURL, config.newsListURL);
+    const response = await axios.get(targetURL, {
+        timeout: config.timeout || 20000,
+        headers: {
+            "User-Agent": config.userAgent || "Mozilla/5.0 (compatible; gas-price-bot/1.0)",
+            "Accept-Language": "en-CA,en;q=0.9",
+        },
+    });
+
+    const deals = parseDealsFromHtml(response.data, config);
+    const seen = readSeenThreadIds(config);
+    const newDeals = deals.filter(item => !seen.includes(item.threadId));
+
+    for (const item of newDeals) {
+        rememberThreadId(config, item.threadId);
+    }
+    writeSeenThreadIds(config);
+
+    if (init) {
+        console.log(`RedFlagDeals initialized with ${deals.length} current deals.`);
         return [];
-    } finally {
-        if (browser) await browser.close();
-    }
-}
-
-async function extractCardDetails(page) {
-    // Selector strings
-    const cardSelector = "li:not(.sticky):not(.deleted)";
-    const urlSelector = "a.topic_title_link"; //"a.topic_title_link"; //"ul.dropdown li:first-child a:first-child";
-    const authorSelector = "span.thread_meta_author";
-    const timeSelector = "span.first-post-time";
-    const titleSelector = "a.topic_title_link";
-    const retailerSelector1 = "a.topictitle_retailer";
-    const retailerSelector2 = "h3.topictitle";
-
-    // Function to extract details from a single card
-    async function extractDetailsFromCard(card) {
-        try {
-            console.log('Card:', await card.evaluate(el => el.innerHTML));
-            // Get the element and print its innerHTML
-            // const urlElement = await card.$(urlSelector);
-            // const innerHTML = await page.evaluate(el => el.innerHTML, urlElement);
-            // console.log('URL Element innerHTML:', innerHTML);
-
-            const url = await card.$eval(urlSelector, a => a.href);
-            const author = await card.$eval(authorSelector, span => span.innerText.trim());
-            const time = await card.$eval(timeSelector, span => span.innerText.trim());
-            const title = await card.$eval(titleSelector, span => span.innerText.trim());
-            let retailer = '';
-
-            // Try the first retailer selector
-            const retailerElement1 = await card.$(retailerSelector1);
-            if (retailerElement1) {
-                retailer = (await retailerElement1.innerText()).trim();
-            }
-
-            // If the first selector didn't work, try the second
-            if (!retailer) {
-                const retailerElement2 = await card.$(retailerSelector2);
-                if (retailerElement2) {
-                    const text = (await retailerElement2.innerText()).trim();
-                    // Extract retailer info from text, assuming it's in brackets "[retailer]"
-                    const matches = text.match(/\[(.*?)\]/);
-                    retailer = matches ? matches[1].trim() : '';
-                }
-            }
-            return { url, author, time, title, retailer };
-        } catch (error) {
-            console.error('Error extracting details from card:', error);
-            return null; // Return null to indicate failure
-        }
     }
 
-    // Get all cards
-    const cards = await page.$$(cardSelector);
-    let singleCard = await extractDetailsFromCard(cards[4])
-    // Map over each card and extract details
-    const cardDetails = (await Promise.all(cards.map(card => extractDetailsFromCard(card))))
-        .filter(detail => detail !== null);
-
-    return cardDetails;
+    return newDeals.map(buildDiscordPost);
 }
 
-module.exports = { rfdeals };
+module.exports = { rfdeals, parseDealsFromHtml };
 
 if (require.main === module) {
     (async () => {
-        try {
-            await rfdeals(config, true);
-            console.log('Initial run completed.');
-        } catch (error) {
-            console.error('Error during initial run:', error);
-        }
-
-        setInterval(async () => {
-            try {
-                const newItems = await rfdeals(config);
-                if (newItems.length > 0) {
-                    console.log('New items found:', newItems);
-                } else {
-                    console.log('No new items found.');
-                }
-            } catch (error) {
-                console.error('Error in interval function:', error);
-            }
-        }, 60 * 1000);
-    })();
+        const init = process.argv.includes("--init");
+        const items = await rfdeals(defaultConfig, init);
+        console.log(JSON.stringify(items.slice(0, 5), null, 2));
+    })().catch(error => {
+        console.error("Error during RedFlagDeals scrape:", error);
+        process.exit(1);
+    });
 }
